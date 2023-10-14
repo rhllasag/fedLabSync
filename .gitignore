@@ -1,3 +1,6 @@
 dist
 muild
+data
+fedLabSync/data/cmapss
+.vscode
 __pycache__
