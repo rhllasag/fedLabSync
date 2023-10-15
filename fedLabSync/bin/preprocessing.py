@@ -1,48 +1,27 @@
 """
-Script for running preprocessing on a all or a subset of data described in
-a U-Time project directory, loading all selected files with specified:
-    - scaler
-    - strip function
-    - quality control function
-    - channel selection
+Script for running preprocessing CMPASS data given:
+    - dataset_path
+    - elbow_point
+    - FD00x
+    - operating_regimes
     - re-sampling
+    - out_path
+    - overwrite
 
 Loaded (and processed) files according to those settings are then saved to a parquet.
 
-The produced, pre-processed parquet archive of data may be consumed by the 'train.py' script setting flag --preprocessed.
-
-This script should be called form within a fedLabSync (utime) project directory
+This script should be called form within a fedLabSync project directory
 """
 
 import logging
 import os
 import numpy as np
-import h5py
-from tqdm import trange
 from sklearn.cluster import KMeans
 from sklearn import preprocessing
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib
 import pyarrow as pa
 import pyarrow.parquet as pq
-from numpy.random import seed
 from argparse import ArgumentParser
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
-from fedLabSync import Defaults
-from fedLabSync.utils import flatten_lists_recursively
-from fedLabSync.hyperparameters import YAMLHParams
-from fedLabSync.utils.scriptutils import assert_project_folder, get_splits_from_all_datasets, add_logging_file_handler
-
-from keras.models import Sequential,load_model
-from keras.layers import Dense, Dropout, Flatten
-from keras.optimizers import SGD
-from keras.models import model_from_json
-
-
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -71,66 +50,6 @@ def get_argparser():
     parser.add_argument("--overwrite", action='store_true',
                         help='Overwrite previous pre-processed data')
     return parser
-
-
-def copy_dataset_hparams(hparams, hparams_out_path):
-    groups_to_save = ('select_channels',
-                      'alternative_select_channels',
-                      'channel_sampling_groups')
-    hparams = hparams.save_current(hparams_out_path, return_copy=True)
-    groups = list(hparams.keys())
-    for group in groups:
-        if group not in groups_to_save:
-            hparams.delete_group(group)
-    hparams.save_current()
-
-
-def add_dataset_entry(hparams_out_path, h5_path,
-                      split_identifier, period_length_sec):
-    field = f"{split_identifier}_data:\n" + \
-            f"  data_dir: {h5_path}\n" + \
-            f"  period_length: {period_length_sec}\n" + \
-            f"  time_unit: SECOND\n" + \
-            f"  identifier: {split_identifier.upper()}\n\n"
-    with open(hparams_out_path, "a") as out_f:
-        out_f.write(field)
-
-
-def preprocess_study(h5_file_group, study):
-    """
-    TODO
-
-    Args:
-        h5_file_group:
-        study:
-
-    Returns:
-        None
-    """
-    # Create groups
-    study_group = h5_file_group.create_group(study.identifier)
-    psg_group = study_group.create_group("PSG")
-    with study.loaded_in_context(allow_missing_channels=True):
-        X, y = study.get_all_periods()
-        for chan_ind, channel_name in enumerate(study.select_channels):
-            # Create PSG channel datasets
-            psg_group.create_dataset(channel_name.original_name,
-                                     data=X[..., chan_ind].ravel())
-        # Create hypnogram dataset
-        study_group.create_dataset("hypnogram", data=y)
-
-        # Create class --> index lookup groups
-        cls_to_indx_group = study_group.create_group('class_to_index')
-        dtype = np.dtype('uint16') if len(y) <= 65535 else np.dtype('uint32')
-        classes = study.hypnogram.classes
-        for class_ in classes:
-            inds = np.where(y == class_)[0].astype(dtype)
-            cls_to_indx_group.create_dataset(
-                str(class_), data=inds
-            )
-
-        # Set attributes, currently only sample rate is (/may be) used
-        study_group.attrs['sample_rate'] = study.sample_rate
 
 def preprocess_fd00x(dataset_path, out_path ,number_of_dataset,RC, clusters):
     # Read training data and sort by id and cycle
