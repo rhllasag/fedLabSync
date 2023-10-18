@@ -55,7 +55,7 @@ def get_argparser():
     parser.add_argument("--overwrite", action='store_true',
                         help='Overwrite existing log files.')
     parser.add_argument("--log_file", type=str, default=None,
-                        help="Relative path (from Defaults.LOG_DIR as specified by ut --log_dir flag) of "
+                        help="Relative path (from Defaults.LOG_DIR as specified by fedLabSync --log_dir flag) of "
                              "output log file for this script. "
                              "Set to an empty string to not save any logs to file for this run. "
                              "Default is None (no log file)")

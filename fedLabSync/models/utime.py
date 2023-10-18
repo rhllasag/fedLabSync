@@ -83,9 +83,9 @@ class UTime(Model):
         """
         # Set various attributes
         assert len(batch_shape) == 4
-        self.n_periods = batch_shape[1]
-        self.input_dims = batch_shape[2]
-        self.n_channels = batch_shape[3]
+        self.n_periods = batch_shape[1] #bs
+        self.input_dims = batch_shape[2] # d
+        self.n_channels = batch_shape[3] # c
         self.n_classes = int(n_classes)
         self.dilation = int(dilation)
         self.cf = np.sqrt(complexity_factor)
