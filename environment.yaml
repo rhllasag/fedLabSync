@@ -1,4 +1,4 @@
-name: u-time
+name: fedLabSync
 channels:
   - defaults
   - conda-forge
@@ -10,8 +10,7 @@ dependencies:
   - tk==8.6.10
   - wheel==0.37.0
   - numpy==1.21.5
-  - psg_utils==0.0.6
-  - utime==1.0.9
+  - psg_utils==0.1.6
   - typing-extensions==4.7.0rc1
   - tensorflow==2.10.0
   - pyarrow

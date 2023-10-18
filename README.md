@@ -7,3 +7,8 @@ python preprocessing.py --dataset_path /data/cmapss --elbow_point 120 --FD00x 4 
 python splitting.py --dataset_path /data/cmapss/processed/ --FD00x 4  --nodes 1 --model cnn
 
 python running.py --dataset_path /data/cmapss/processed/ --nodes 1 --model cnn
+
+
+
+
+python initializing.py --name utime_model --model utime --data_dir /data/cmapss/processed/data-centralized

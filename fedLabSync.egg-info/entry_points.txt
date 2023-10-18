@@ -1,0 +1,3 @@
+[console_scripts]
+fd = fedLabSync.bin.fd:entry_func
+
