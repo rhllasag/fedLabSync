@@ -1,3 +1,8 @@
+# Pypi
+python setup.py bdist_wheel
+
+pip install  dist/fedLabSync-0.0.2-py3-none-any.whl  --force-reinstall
+
 # Hybrid Federated Learning 
 
 cd /utime/bin

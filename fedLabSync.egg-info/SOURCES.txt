@@ -3,6 +3,7 @@ setup.cfg
 setup.py
 fedLabSync/__init__.py
 fedLabSync/_defaults.py
+fedLabSync/version.py
 fedLabSync.egg-info/PKG-INFO
 fedLabSync.egg-info/SOURCES.txt
 fedLabSync.egg-info/dependency_links.txt

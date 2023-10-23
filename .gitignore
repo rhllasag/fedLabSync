@@ -2,6 +2,6 @@ dist
 muild
 data
 fedLabSync/data/cmapss
-fedLabSync.egg.infp
+fedLabSync.egg.info
 .vscode
 __pycache__

@@ -1,12 +1,17 @@
 Metadata-Version: 2.1
 Name: fedLabSync
-Version: 0.0.1
+Version: 0.0.2
 Summary: Package used to run Hybrid Federated Learning based on Label Synchornization
 Home-page: https://github.com/rhllasag
 Author: Raul Homero Llasag Rosero
 Author-email: raul.hllasag@dei.uc.pt
 License: UNKNOWN
-Description: # Hybrid Federated Learning 
+Description: # Pypi
+        python setup.py bdist_wheel
+        
+        pip install  dist/fedLabSync-0.0.2-py3-none-any.whl  --force-reinstall
+        
+        # Hybrid Federated Learning 
         
         cd /utime/bin
         
@@ -17,7 +22,7 @@ Description: # Hybrid Federated Learning
         python running.py --dataset_path /data/cmapss/processed/ --nodes 1 --model cnn
         
         
-        
+        # U-Time
         
         python initializing.py --name utime_model --model utime --data_dir /data/cmapss/processed/data-centralized
 Platform: UNKNOWN

@@ -43,7 +43,7 @@ def init_default_project_structure(project_folder, required_folders=('logs', 'mo
 
 def get_train_and_val_datasets(hparams, no_val, train_on_val, dataset_ids=None):
     """
-    Return all pairs of (train, validation) SleepStudyDatasets as described in
+    Return all pairs of (train, validation) datasets as described in
     the YAMLHParams object 'hparams'. A list is returned, as more than 1
     dataset may be described in the parameter file.
 
@@ -77,7 +77,7 @@ def get_train_and_val_datasets(hparams, no_val, train_on_val, dataset_ids=None):
             raise ValueError("Did not find a validation set for one or more "
                              "pairs in {}".format(datasets))
         logger.info("[OBS] Merging training and validation sets")
-        datasets = [merge_train_and_val(*ds) for ds in datasets]
+        datasets = [merge_train_and_val(*ds) for ds in datasets] # Here we define the SleepStudyDataset objects
         no_val = True
     if not no_val:
         train_datasets, val_datasets = zip(*datasets)
@@ -212,7 +212,7 @@ def merge_train_and_val(train, val):
         A list of 1 SleepStudyDataset object storing data from both 'train'
         and 'val'
     """
-    train.add_pairs(val.pairs)
+    train.add_pairs(val.pairs) # Dictionary 
     train._identifier = train.identifier + "_" + val.identifier.split("/")[-1]
     train.log()
     return [train]

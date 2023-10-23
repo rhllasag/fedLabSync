@@ -1,0 +1,2 @@
+
+2023/10/21 17:35:27 | INFO | Args dump: {'num_gpus': 1, 'force_gpus': '', 'continue_training': False, 'initialize_from': None, 'overwrite': True, 'log_file': 'training_log', 'datasets': None, 'just': None, 'no_val': False, 'max_val_studies_per_dataset': 20, 'max_train_samples_per_epoch': 500000.0, 'n_epochs': None, 'channels': ['EEG Fpz-Cz'], 'train_queue_type': 'eager', 'val_queue_type': 'lazy', 'max_loaded_per_dataset': 40, 'num_access_before_reload': 32, 'preprocessed': False, 'final_weights_file_name': 'model_weights.h5', 'train_on_val': False}

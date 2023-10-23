@@ -3,9 +3,16 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 from setuptools import setup, find_packages
+
+__version__ = None
+with open("fedLabSync/version.py") as version_file:
+    exec(version_file.read())
+if __version__ is None:
+    raise ValueError("Did not find __version__ in version.py file.")
+
 setup(
     name="fedLabSync",
-    version="0.0.1",
+    version=__version__,
     author="Raul Homero Llasag Rosero",
     author_email="raul.hllasag@dei.uc.pt",
     url = 'https://github.com/rhllasag',

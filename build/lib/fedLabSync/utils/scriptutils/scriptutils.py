@@ -4,6 +4,7 @@ A set of utility functions used across multiple scripts in utime.bin
 
 import logging
 import os
+import glob
 from functools import wraps
 from psg_utils.utils import ensure_list_or_tuple
 from psg_utils.dataset import SleepStudyDataset
@@ -46,7 +47,7 @@ def with_logging_level_wrapper(func, level, logger_names=None):
 def assert_project_folder(project_folder, evaluation=False):
     """
     Raises RuntimeError if a folder 'project_folder' does not seem to be a
-    valid U-Time folder in the training phase (evaluation=False) or evaluation
+    valid fedLabSync folder in the training phase (evaluation=False) or evaluation
     phase (evaluation=True).
 
     Args:
@@ -56,8 +57,6 @@ def assert_project_folder(project_folder, evaluation=False):
     Returns:
         empty_models_dir: Bool, whether the project_folder/models dir is empty or not.
     """
-    import os
-    import glob
     project_folder = os.path.abspath(project_folder)
     if not os.path.exists(Defaults.get_hparams_path(project_folder)) \
             and not os.path.exists(Defaults.get_pre_processed_hparams_path(project_folder)):

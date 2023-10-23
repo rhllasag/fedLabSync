@@ -90,7 +90,8 @@ def get_argparser():
     parser.add_argument("--val_queue_type", type=str, default='lazy',
                         help="Queue type for validation data. "
                              "See --train_queue_type.")
-    parser.add_argument("--max_loaded_per_dataset", type=int, default=40,
+    # TO DELETE
+    parser.add_argument("--max_loaded_per_dataset", type=int, default=40,  
                         help="Set a number of maximum SleepStudy objects to"
                              " be kept loaded in memory at any given time per "
                              "dataset. OBS: If training on multiple datasets,"
@@ -103,6 +104,7 @@ def get_argparser():
                              "is accessed (normally for extracting data) "
                              "before the study is unloaded and replaced by "
                              "another random study from the same dataset.")
+    # TO DELETE
     parser.add_argument("--preprocessed", action='store_true',
                         help="Run on a pre-processed dataset as output by the "
                              "'ut preprocess' script. Streams data from disk "
@@ -184,7 +186,7 @@ def run(args):
     """
     assert_args(args)
     project_dir = os.path.abspath("./")
-    model_dir_is_empty = assert_project_folder(project_dir)
+    model_dir_is_empty = assert_project_folder(project_dir) #whether the project_folder/model dir is empty or not
     if args.overwrite and not args.continue_training:
         remove_previous_session(project_dir)
         init_default_project_structure(project_dir)
@@ -203,7 +205,7 @@ def run(args):
         val_queue_type = 'eager'
     else:
         yaml_path = Defaults.get_hparams_path(project_dir)
-        dataset_func = get_train_and_val_datasets
+        dataset_func = get_train_and_val_datasets               # Get training and validation dataset from YAML_Params
         train_queue_type = args.train_queue_type
         val_queue_type = args.val_queue_type
 
@@ -213,6 +215,9 @@ def run(args):
 
     # Initialize and load (potentially multiple) datasets
     train_datasets, val_datasets = dataset_func(hparams, args.no_val, args.train_on_val, args.datasets)
+
+    print("--------------------------")
+    print(train_datasets)
 
     if args.just:
         keep_n_random(*train_datasets, *val_datasets, keep=args.just)
