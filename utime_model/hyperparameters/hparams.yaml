@@ -2,6 +2,9 @@
 # in the models library.
 #
 # Components prefixed CB are for callback hyperparameter settings
+__package_info__:
+  package: fedLabSync
+  version: 0.0.3
 
 CB_tb: &TB
   # tensorboard

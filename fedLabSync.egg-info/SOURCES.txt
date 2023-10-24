@@ -34,8 +34,8 @@ fedLabSync/bin/preprocessing.py
 fedLabSync/bin/running.py
 fedLabSync/bin/splitting.py
 fedLabSync/bin/summary.py
-fedLabSync/bin/test.py
 fedLabSync/bin/train.py
+fedLabSync/bin/training.py
 fedLabSync/bin/defaults/utime/hparams.yaml
 fedLabSync/bin/defaults/utime/dataset_configurations/dataset_1.yaml
 fedLabSync/callbacks/__init__.py

@@ -2,7 +2,6 @@ import logging
 from fedLabSync import Defaults
 from psg_utils.utils import ensure_list_or_tuple
 from yamlhparams import YAMLHParams as _YAMLHParams
-
 logger = logging.getLogger(__name__)
 
 
