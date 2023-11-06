@@ -42,7 +42,7 @@ Description: # Installation guide
         
         fd preprocessing --dataset_path /data/cmapss --elbow_point 120 --FD00x 4 --operating_regimes 3 --out_path /data/cmapss/processed
         
-        fd splitting --dataset_path /data/cmapss/processed/ --FD00x 4 --nodes 1 --model cnn
+        fd splitting --dataset_path \data\cmapss\processed\ --FD00x 4 --nodes 4 --model utime --seed 5
         
         fd running --dataset_path /data/cmapss/processed/ --nodes 1 --model utime --input_signals 16
         

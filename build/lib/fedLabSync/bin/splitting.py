@@ -23,6 +23,8 @@ def get_argparser():
                         help="model", default="mlp")
     parser.add_argument("--nodes", type=int, required=True,
                         help="nodes", default=1)
+    parser.add_argument("--seed", type=int,
+                        help="seed", default=1)
     parser.add_argument("--sequence_length", type=int,
                         help="sequence_length", default=55)
     parser.add_argument("--overwrite", action='store_true',
@@ -74,7 +76,7 @@ def save_h5_files(out_path, dataset, name):
         f.create_dataset(name, data=dataset)
 
 
-def split_data(out_path, number_of_dataset, model, nodes, sequence_length):
+def split_data(out_path, number_of_dataset, model, nodes, sequence_length, seed):
     train_df = pq.read_table(out_path + 'train_fd00' +
                              str(number_of_dataset)+'.parquet').to_pandas()
     test_df = pq.read_table(out_path + 'test_fd00' +
@@ -199,8 +201,54 @@ def split_data(out_path, number_of_dataset, model, nodes, sequence_length):
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_val, "X_val")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_train, "y_train")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
-            
-            
+    if nodes!=1:
+        if model =="utime":
+            random.seed(seed)
+            engines = train_df['id'].max()
+            ids = [*range(1,engines)]
+            random.shuffle(ids)
+            data_nodes=[ids[x:x+len(ids)//nodes] for x in range(0, len(ids), len(ids)//nodes)]            
+            for data_node in data_nodes:
+                training_ids = ids[:int(len(data_node)*0.85)] 
+                validation_ids = ids[int(len(data_node)*0.85):int(len(data_node))] 
+
+                training_df = train_df.loc[train_df["id"].isin(training_ids)]
+                validation_df = train_df.loc[train_df["id"].isin(validation_ids)]
+                
+                # generate sequences X
+                seq_gen_X_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, sequence_cols)) for id in training_df['id'].unique())
+                seq_gen_X_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, sequence_cols)) for id in validation_df['id'].unique())
+
+                # convert X to numpy array
+                seq_X_train = np.concatenate(list(seq_gen_X_train)).astype(np.float64)
+                seq_X_val = np.concatenate(list(seq_gen_X_val)).astype(np.float64)
+
+                seq_X_train = seq_X_train.reshape(seq_X_train.shape[0],seq_X_train.shape[1] , seq_X_train.shape[2],1)
+                seq_X_val = seq_X_val.reshape(seq_X_val.shape[0],seq_X_val.shape[1] , seq_X_val.shape[2],1)
+                
+                # generate sequences Y
+                seq_gen_Y_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, ['RUL'])) for id in training_df['id'].unique())
+                seq_gen_Y_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, ['RUL'])) for id in validation_df['id'].unique())
+
+                # convert Y to numpy array
+                seq_Y_train = np.concatenate(list(seq_gen_Y_train)).astype(np.float64)
+                seq_Y_val = np.concatenate(list(seq_gen_Y_val)).astype(np.float64)
+
+                seq_Y_train = seq_Y_train.reshape(seq_Y_train.shape[0],seq_Y_train.shape[1] , seq_Y_train.shape[2])
+                seq_Y_val = seq_Y_val.reshape(seq_Y_val.shape[0],seq_Y_val.shape[1] , seq_Y_val.shape[2])
+                if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))):
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
+                    save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
+                else:
+                    os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node)))
+                    # Save .h5 
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                
 def run(args):
     """
     Run the script according to args - Please refer to the argparser.
@@ -216,7 +264,7 @@ def run(args):
             os.remove(project_dir+args.dataset_path)
             os.mkdir(project_dir+args.dataset_path)
         else:
-            split_data(project_dir+args.dataset_path, args.FD00x, args.model, args.nodes, args.sequence_length)            
+            split_data(project_dir+args.dataset_path, args.FD00x, args.model, args.nodes, args.sequence_length, args.seed)            
     else:
         os.mkdir(project_dir+args.dataset_path)
         logger.info(

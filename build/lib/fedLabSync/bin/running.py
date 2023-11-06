@@ -470,7 +470,9 @@ def load_data_and_run(dataset_path, model, nodes, input_signals):
             callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=fit['patience'], restore_best_weights = True)
 
             history = model.fit(train_dataset, epochs=fit['n_epochs'], validation_data=(seq_X_val, seq_Y_val), callbacks=[callback], verbose=fit['verbose'])
-
+            
+            save_model_weights(resources_path, model)
+            
 def run(args):
     """
     Run the script according to args - Please refer to the argparser.
