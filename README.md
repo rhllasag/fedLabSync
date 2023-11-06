@@ -1,4 +1,29 @@
-# Pypi
+# Installation guide 
+
+git clone https://github.com/rhllasag/fedLabSync.git
+
+# Conda Environment
+
+conda env create --file environment.yaml
+
+conda activate fedLabSync
+
+pip install fedLabSync
+
+pip install psg_utils==0.1.6
+
+pip install typing-extensions==4.6.0
+
+pip install tables
+
+pip install tables
+
+pip install carbontracker
+
+pip install tensorflow_addons
+
+# Pypi Installation in case of fedLabSync unavailability
+
 python setup.py bdist_wheel
 
 pip install  dist/fedLabSync-0.0.3-py3-none-any.whl  --force-reinstall
@@ -12,7 +37,6 @@ fd preprocessing --dataset_path /data/cmapss --elbow_point 120 --FD00x 4 --opera
 fd splitting --dataset_path /data/cmapss/processed/ --FD00x 4  --nodes 1 --model cnn
 
 fd running --dataset_path /data/cmapss/processed/ --nodes 1 --model cnn
-
 
 # U-Time
 
