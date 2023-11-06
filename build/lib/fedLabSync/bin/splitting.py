@@ -237,33 +237,31 @@ def split_data(out_path, number_of_dataset, model, nodes, sequence_length, seed)
                 seq_Y_train = seq_Y_train.reshape(seq_Y_train.shape[0],seq_Y_train.shape[1] , seq_Y_train.shape[2])
                 seq_Y_val = seq_Y_val.reshape(seq_Y_val.shape[0],seq_Y_val.shape[1] , seq_Y_val.shape[2])
                 if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))):
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
-                    save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_train, "X_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_val, "X_val")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_train, "y_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_val, "y_val")
                 else:
                     if os.path.exists(out_path+"data-decentralized-"+str(model)+"/"):
                         if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))):
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_val, "y_val")
                         else:
                             os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node)))
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
-                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_val, "y_val")
                     else: 
                         os.mkdir(out_path+"data-decentralized-"+str(model)+"/")
                         os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node)))
-                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
-                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
-                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
-                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_train, "X_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_X_val, "X_val")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_train, "y_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"+seq_Y_val, "y_val")
                     # Save .h5 
-                    
-                
 def run(args):
     """
     Run the script according to args - Please refer to the argparser.
