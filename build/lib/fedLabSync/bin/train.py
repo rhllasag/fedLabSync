@@ -216,9 +216,6 @@ def run(args):
     # Initialize and load (potentially multiple) datasets
     train_datasets, val_datasets = dataset_func(hparams, args.no_val, args.train_on_val, args.datasets)
 
-    print("--------------------------")
-    print(train_datasets)
-
     if args.just:
         keep_n_random(*train_datasets, *val_datasets, keep=args.just)
 

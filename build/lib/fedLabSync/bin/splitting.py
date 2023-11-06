@@ -23,6 +23,8 @@ def get_argparser():
                         help="model", default="mlp")
     parser.add_argument("--nodes", type=int, required=True,
                         help="nodes", default=1)
+    parser.add_argument("--sequence_length", type=int,
+                        help="sequence_length", default=55)
     parser.add_argument("--overwrite", action='store_true',
                         help='Overwrite previous pre-processed data')
     return parser
@@ -72,17 +74,18 @@ def save_h5_files(out_path, dataset, name):
         f.create_dataset(name, data=dataset)
 
 
-def split_data(out_path, number_of_dataset, model, nodes):
+def split_data(out_path, number_of_dataset, model, nodes, sequence_length):
     train_df = pq.read_table(out_path + 'train_fd00' +
                              str(number_of_dataset)+'.parquet').to_pandas()
     test_df = pq.read_table(out_path + 'test_fd00' +
                             str(number_of_dataset)+'.parquet').to_pandas()
+    
+    # Naming columns to training the model 
+    sensor_cols = ['s2','s3','s4','s6','s7', 's8','s9','s10','s11','s12','s13','s14','s15','s17','s20','s21']
+    sequence_cols = []
+    sequence_cols.extend(sensor_cols)
+    
     if nodes==1:
-        # Naming columns to training the model 
-        sensor_cols = ['s2','s3','s4','s6','s7', 's8','s9','s10','s11','s12','s13','s14','s15','s17','s20','s21']
-        sequence_cols = []
-        sequence_cols.extend(sensor_cols)
-
         if model =="mlp":
             routes_train = {}
             routes_test = {}
@@ -119,8 +122,6 @@ def split_data(out_path, number_of_dataset, model, nodes):
             training_df = train_df.loc[train_df["id"].isin(training_ids)]
             validation_df = train_df.loc[train_df["id"].isin(validation_ids)]
 
-            sequence_length = 15
-
             seq_gen_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, sequence_cols)) for id in training_df['id'].unique())
             seq_gen_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, sequence_cols)) for id in validation_df['id'].unique())
 
@@ -153,7 +154,53 @@ def split_data(out_path, number_of_dataset, model, nodes):
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_array_val, "X_val")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",label_array_train, "y_train")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",label_array_val, "y_val")
+        if model =="utime":
+            
+            engines = train_df['id'].max()
+            ids = [*range(1,engines)]
+            random.shuffle(ids)
+            training_ids = ids[:int(len(ids)*0.85)] 
+            validation_ids = ids[int(len(ids)*0.85):int(len(ids))] 
 
+            training_df = train_df.loc[train_df["id"].isin(training_ids)]
+            validation_df = train_df.loc[train_df["id"].isin(validation_ids)]
+            
+            # generate sequences X
+            seq_gen_X_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, sequence_cols)) for id in training_df['id'].unique())
+            seq_gen_X_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, sequence_cols)) for id in validation_df['id'].unique())
+
+            # convert X to numpy array
+            seq_X_train = np.concatenate(list(seq_gen_X_train)).astype(np.float64)
+            seq_X_val = np.concatenate(list(seq_gen_X_val)).astype(np.float64)
+
+            seq_X_train = seq_X_train.reshape(seq_X_train.shape[0],seq_X_train.shape[1] , seq_X_train.shape[2],1)
+            seq_X_val = seq_X_val.reshape(seq_X_val.shape[0],seq_X_val.shape[1] , seq_X_val.shape[2],1)
+            
+            # generate sequences Y
+            seq_gen_Y_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, ['RUL'])) for id in training_df['id'].unique())
+            seq_gen_Y_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, ['RUL'])) for id in validation_df['id'].unique())
+
+            # convert Y to numpy array
+            seq_Y_train = np.concatenate(list(seq_gen_Y_train)).astype(np.float64)
+            seq_Y_val = np.concatenate(list(seq_gen_Y_val)).astype(np.float64)
+
+            seq_Y_train = seq_Y_train.reshape(seq_Y_train.shape[0],seq_Y_train.shape[1] , seq_Y_train.shape[2])
+            seq_Y_val = seq_Y_val.reshape(seq_Y_val.shape[0],seq_Y_val.shape[1] , seq_Y_val.shape[2])
+            
+            if os.path.exists(out_path+"data-centralized-"+str(model)+"/"):
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_train, "X_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_val, "X_val")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_train, "y_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
+            else:
+                os.mkdir(out_path+"data-centralized-"+str(model)+"/")
+                # Save .h5 
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_train, "X_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_val, "X_val")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_train, "y_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
+            
+            
 def run(args):
     """
     Run the script according to args - Please refer to the argparser.
@@ -169,15 +216,12 @@ def run(args):
             os.remove(project_dir+args.dataset_path)
             os.mkdir(project_dir+args.dataset_path)
         else:
-            split_data(project_dir+args.dataset_path, args.FD00x, args.model, args.nodes)            
+            split_data(project_dir+args.dataset_path, args.FD00x, args.model, args.nodes, args.sequence_length)            
     else:
         os.mkdir(project_dir+args.dataset_path)
         logger.info(
                 f"Out file at {project_dir+args.dataset_path} exists, and --overwrite was not set")
         exit(0)
-    
-    
-    
 
 
 def entry_func(args=None):
