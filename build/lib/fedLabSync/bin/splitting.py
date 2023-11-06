@@ -242,12 +242,27 @@ def split_data(out_path, number_of_dataset, model, nodes, sequence_length, seed)
                     save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
                     save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
                 else:
-                    os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node)))
+                    if os.path.exists(out_path+"data-decentralized-"+str(model)+"/"):
+                        if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))):
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                        else:
+                            os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node)))
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                    else: 
+                        os.mkdir(out_path+"data-decentralized-"+str(model)+"/")
+                        os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node)))
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
                     # Save .h5 
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_train, "X_train")
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_X_val, "X_val")
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_train, "y_train")
-                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/",seq_Y_val, "y_val")
+                    
                 
 def run(args):
     """
