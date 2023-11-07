@@ -341,11 +341,13 @@ def load_data_and_run(dataset_path, model, nodes, input_signals):
         resources_path = dataset_path+"data-centralized-"+str(model)+"/"
         X_train=read_h5_file(resources_path, "X_train")
         y_train=read_h5_file(resources_path, "y_train")
+        X_val=read_h5_file(resources_path, "X_val")
+        y_val=read_h5_file(resources_path, "y_val")
         if model =="mlp":
             model = create_model_mlp(input_signals)
             early_stop = keras.callbacks.EarlyStopping(monitor='val_rmse', patience=8)
             early_history = model.fit(X_train, y_train, 
-                        epochs=580, validation_split=0.15,
+                        epochs=580, validation_data=(X_val,y_val),
                         callbacks=[early_stop])
             save_model_weights(resources_path, model)
         if model=="cnn":
