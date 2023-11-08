@@ -263,6 +263,7 @@ def split_data(out_path, number_of_dataset, model, nodes, sequence_length, seed,
                         save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_val, "X_val")
                         save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_train, "y_train")
                         save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_val, "y_val")
+        #
         if model =="utime":
             for data_node in data_nodes:
                 random.shuffle(sequence_cols)
