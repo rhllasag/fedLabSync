@@ -21,8 +21,16 @@ def get_argparser():
                         help="FD00x split")
     parser.add_argument("--model", type=str, required=True,
                         help="model", default="mlp")
+    parser.add_argument("--val_percentage", type=float, required=True,
+                        help="val_percentage", default=0.80)
+    parser.add_argument("--features_percentage", type=float,
+                        help="features_percentage", default=0.80)
     parser.add_argument("--nodes", type=int, required=True,
                         help="nodes", default=1)
+    parser.add_argument("--seed", type=int,
+                        help="seed", default=1)
+    parser.add_argument("--sequence_length", type=int,
+                        help="sequence_length", default=55)
     parser.add_argument("--overwrite", action='store_true',
                         help='Overwrite previous pre-processed data')
     return parser
@@ -72,54 +80,60 @@ def save_h5_files(out_path, dataset, name):
         f.create_dataset(name, data=dataset)
 
 
-def split_data(out_path, number_of_dataset, model, nodes):
+def split_data(out_path, number_of_dataset, model, nodes, sequence_length, seed, val_percentage, features_percentage):
     train_df = pq.read_table(out_path + 'train_fd00' +
                              str(number_of_dataset)+'.parquet').to_pandas()
     test_df = pq.read_table(out_path + 'test_fd00' +
                             str(number_of_dataset)+'.parquet').to_pandas()
+    
+    # Naming columns to training the model 
+    sensor_cols = ['s2','s3','s4','s6','s7', 's8','s9','s10','s11','s12','s13','s14','s15','s17','s20','s21']
+    sequence_cols = []
+    sequence_cols.extend(sensor_cols)
+    
     if nodes==1:
-        # Naming columns to training the model 
-        sensor_cols = ['s2','s3','s4','s6','s7', 's8','s9','s10','s11','s12','s13','s14','s15','s17','s20','s21']
-        sequence_cols = []
-        sequence_cols.extend(sensor_cols)
-
+        engines = train_df['id'].max()
+        ids = [*range(1,engines)]
+        random.shuffle(ids)
+        training_ids = ids[:int(len(ids)*val_percentage)] 
+        validation_ids = ids[int(len(ids)*val_percentage):int(len(ids))]
         if model =="mlp":
             routes_train = {}
-            routes_test = {}
-            for unit_nr in train_df['id'].unique():
-                routes_train[unit_nr-1] = train_df.loc[train_df['id'] == unit_nr]
-            for unit_nr in test_df['id'].unique():
-                routes_test[unit_nr-1] = test_df.loc[test_df['id'] == unit_nr]
-
+            routes_val = {}
+            for x in range(len(training_ids)):
+                routes_train[x] = train_df.loc[train_df['id'] == training_ids[x]]
+            for x in range(len(validation_ids)):
+                routes_val[x] = train_df.loc[train_df['id'] == training_ids[x]]
+                
             X_train=routes_train[0][sequence_cols]
             y_train=routes_train[0]['RUL']
+            X_val=routes_val[0][sequence_cols]
+            y_val=routes_val[0]['RUL']
+            
             for route_train in routes_train:
                 if route_train != 0:
                     X_train=X_train.append(routes_train[route_train][sequence_cols],ignore_index=True)
                     y_train=y_train.append(routes_train[route_train]['RUL'],ignore_index=True)
+            for route_val in routes_val:
+                if route_val != 0:
+                    X_val=X_val.append(routes_val[route_val][sequence_cols],ignore_index=True)
+                    y_val=y_val.append(routes_val[route_val]['RUL'],ignore_index=True)
             
             if os.path.exists(out_path+"data-centralized-"+str(model)+"/"):
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",X_train.to_numpy(), "X_train")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",y_train.to_numpy(), "y_train")
-                print("Input columns:" + str(len(sensor_cols)))
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",X_val.to_numpy(), "X_val")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",y_val.to_numpy(), "y_val")
             else:
                 os.mkdir(out_path+"data-centralized-"+str(model)+"/")
                 # Save .h5 
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/", X_train.to_numpy(), "X_train")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/", y_train.to_numpy(), "y_train")
-                print("Input columns:" + str(len(sensor_cols)))
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",X_val.to_numpy(), "X_val")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",y_val.to_numpy(), "y_val")
         if model =="cnn":
-
-            engines = train_df['id'].max()
-            ids = [*range(1,engines)]
-            random.shuffle(ids)
-            training_ids = ids[:int(len(ids)*0.85)] 
-            validation_ids = ids[int(len(ids)*0.85):int(len(ids))] 
-
             training_df = train_df.loc[train_df["id"].isin(training_ids)]
             validation_df = train_df.loc[train_df["id"].isin(validation_ids)]
-
-            sequence_length = 15
 
             seq_gen_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, sequence_cols)) for id in training_df['id'].unique())
             seq_gen_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, sequence_cols)) for id in validation_df['id'].unique())
@@ -153,7 +167,160 @@ def split_data(out_path, number_of_dataset, model, nodes):
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_array_val, "X_val")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",label_array_train, "y_train")
                 save_h5_files(out_path+"data-centralized-"+str(model)+"/",label_array_val, "y_val")
+        if model =="utime":
+            training_df = train_df.loc[train_df["id"].isin(training_ids)]
+            validation_df = train_df.loc[train_df["id"].isin(validation_ids)]
+            
+            # generate sequences X
+            seq_gen_X_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, sequence_cols)) for id in training_df['id'].unique())
+            seq_gen_X_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, sequence_cols)) for id in validation_df['id'].unique())
 
+            # convert X to numpy array
+            seq_X_train = np.concatenate(list(seq_gen_X_train)).astype(np.float64)
+            seq_X_val = np.concatenate(list(seq_gen_X_val)).astype(np.float64)
+
+            seq_X_train = seq_X_train.reshape(seq_X_train.shape[0],seq_X_train.shape[1] , seq_X_train.shape[2],1)
+            seq_X_val = seq_X_val.reshape(seq_X_val.shape[0],seq_X_val.shape[1] , seq_X_val.shape[2],1)
+            
+            # generate sequences Y
+            seq_gen_Y_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, ['RUL'])) for id in training_df['id'].unique())
+            seq_gen_Y_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, ['RUL'])) for id in validation_df['id'].unique())
+
+            # convert Y to numpy array
+            seq_Y_train = np.concatenate(list(seq_gen_Y_train)).astype(np.float64)
+            seq_Y_val = np.concatenate(list(seq_gen_Y_val)).astype(np.float64)
+
+            seq_Y_train = seq_Y_train.reshape(seq_Y_train.shape[0],seq_Y_train.shape[1] , seq_Y_train.shape[2])
+            seq_Y_val = seq_Y_val.reshape(seq_Y_val.shape[0],seq_Y_val.shape[1] , seq_Y_val.shape[2])
+            
+            if os.path.exists(out_path+"data-centralized-"+str(model)+"/"):
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_train, "X_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_val, "X_val")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_train, "y_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
+            else:
+                os.mkdir(out_path+"data-centralized-"+str(model)+"/")
+                # Save .h5 
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_train, "X_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_X_val, "X_val")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_train, "y_train")
+                save_h5_files(out_path+"data-centralized-"+str(model)+"/",seq_Y_val, "y_val")
+    if nodes!=1:
+        random.seed(seed)
+        engines = train_df['id'].max()
+        ids = [*range(1,engines)]
+        random.shuffle(ids)
+        data_nodes=[ids[x:x+len(ids)//nodes] for x in range(0, len(ids), len(ids)//nodes)]  
+        if model =="mlp":
+            for data_node in data_nodes:
+                routes_train = {}
+                routes_val = {}
+                random.shuffle(sequence_cols)
+                sequence_cols_ = sequence_cols[:int(len(sequence_cols)*features_percentage)]
+                training_ids = ids[:int(len(data_node)*val_percentage)] 
+                validation_ids = ids[int(len(data_node)*val_percentage):int(len(data_node))]
+                
+                for x in range(len(training_ids)):
+                    routes_train[x] = train_df.loc[train_df['id'] == training_ids[x]]
+                for x in range(len(validation_ids)):
+                    routes_val[x] = train_df.loc[train_df['id'] == training_ids[x]]
+                    
+                # Get X and Y data
+                X_train=routes_train[0][sequence_cols_]
+                y_train=routes_train[0]['RUL']
+                X_val=routes_val[0][sequence_cols_]
+                y_val=routes_val[0]['RUL']
+                for route_train in routes_train:
+                    if route_train != 0:
+                        X_train=X_train.append(routes_train[route_train][sequence_cols_],ignore_index=True)
+                        y_train=y_train.append(routes_train[route_train]['RUL'],ignore_index=True)
+                for route_val in routes_val:
+                    if route_val != 0:
+                        X_val=X_val.append(routes_val[route_val][sequence_cols_],ignore_index=True)
+                        y_val=y_val.append(routes_val[route_val]['RUL'],ignore_index=True)
+                if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"):
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_train, "X_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_val, "X_val")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_train, "y_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_val, "y_val")
+                else:
+                    if os.path.exists(out_path+"data-decentralized-"+str(model)+"/"):
+                        if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))):
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_val, "y_val")
+                        else:
+                            os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_val, "y_val")
+                    else: 
+                        os.mkdir(out_path+"data-decentralized-"+str(model)+"/")
+                        os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_train, "X_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",X_val, "X_val")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_train, "y_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",y_val, "y_val")
+        #
+        if model =="utime":
+            for data_node in data_nodes:
+                random.shuffle(sequence_cols)
+                sequence_cols_ = sequence_cols[:int(len(sequence_cols)*features_percentage)]
+                training_ids = ids[:int(len(data_node)*val_percentage)] 
+                validation_ids = ids[int(len(data_node)*val_percentage):int(len(data_node))] 
+
+                training_df = train_df.loc[train_df["id"].isin(training_ids)]
+                validation_df = train_df.loc[train_df["id"].isin(validation_ids)]
+                
+                # generate sequences X
+                seq_gen_X_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, sequence_cols_)) for id in training_df['id'].unique())
+                seq_gen_X_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, sequence_cols_)) for id in validation_df['id'].unique())
+
+                # convert X to numpy array
+                seq_X_train = np.concatenate(list(seq_gen_X_train)).astype(np.float64)
+                seq_X_val = np.concatenate(list(seq_gen_X_val)).astype(np.float64)
+
+                seq_X_train = seq_X_train.reshape(seq_X_train.shape[0],seq_X_train.shape[1] , seq_X_train.shape[2],1)
+                seq_X_val = seq_X_val.reshape(seq_X_val.shape[0],seq_X_val.shape[1] , seq_X_val.shape[2],1)
+                
+                # generate sequences Y
+                seq_gen_Y_train = (list(gen_sequence(training_df[training_df['id']==id], sequence_length, ['RUL'])) for id in training_df['id'].unique())
+                seq_gen_Y_val = (list(gen_sequence(validation_df[validation_df['id']==id], sequence_length, ['RUL'])) for id in validation_df['id'].unique())
+
+                # convert Y to numpy array
+                seq_Y_train = np.concatenate(list(seq_gen_Y_train)).astype(np.float64)
+                seq_Y_val = np.concatenate(list(seq_gen_Y_val)).astype(np.float64)
+
+                seq_Y_train = seq_Y_train.reshape(seq_Y_train.shape[0],seq_Y_train.shape[1] , seq_Y_train.shape[2])
+                seq_Y_val = seq_Y_val.reshape(seq_Y_val.shape[0],seq_Y_val.shape[1] , seq_Y_val.shape[2])
+                if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/"):
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_train, "X_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_val, "X_val")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_train, "y_train")
+                    save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_val, "y_val")
+                else:
+                    if os.path.exists(out_path+"data-decentralized-"+str(model)+"/"):
+                        if os.path.exists(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))):
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_val, "y_val")
+                        else:
+                            os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_train, "X_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_val, "X_val")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_train, "y_train")
+                            save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_val, "y_val")
+                    else: 
+                        os.mkdir(out_path+"data-decentralized-"+str(model)+"/")
+                        os.mkdir(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_train, "X_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_X_val, "X_val")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_train, "y_train")
+                        save_h5_files(out_path+"data-decentralized-"+str(model)+"/node"+str(data_nodes.index(data_node))+"/",seq_Y_val, "y_val")
+                    # Save .h5 
 def run(args):
     """
     Run the script according to args - Please refer to the argparser.
@@ -169,15 +336,12 @@ def run(args):
             os.remove(project_dir+args.dataset_path)
             os.mkdir(project_dir+args.dataset_path)
         else:
-            split_data(project_dir+args.dataset_path, args.FD00x, args.model, args.nodes)            
+            split_data(project_dir+args.dataset_path, args.FD00x, args.model, args.nodes, args.sequence_length, args.seed, args.val_percentage, args.features_percentage)            
     else:
         os.mkdir(project_dir+args.dataset_path)
         logger.info(
                 f"Out file at {project_dir+args.dataset_path} exists, and --overwrite was not set")
         exit(0)
-    
-    
-    
 
 
 def entry_func(args=None):
