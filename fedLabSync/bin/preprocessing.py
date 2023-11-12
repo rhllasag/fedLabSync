@@ -159,7 +159,7 @@ def preprocess_fd00x(dataset_path, out_path ,number_of_dataset,RC, clusters):
     setting2_ = test_df['setting2'].copy()
     setting3_ = test_df['setting3'].copy()
     for indices in test_df.groupby('regime').groups.values():
-        test_df.loc[indices] = (2*(test_df.loc[indices]-test_df.loc[indices].min()))/(test_df.loc[indices].max()-test_df.loc[indices].min())-1
+        test_df.loc[indices] = (test_df.loc[indices]-test_df.loc[indices].mean())/test_df.loc[indices].std()
     test_df['regime'] = indx
     test_df['id'] = id_
     test_df['RUL'] = rul_
@@ -212,8 +212,8 @@ def run(args):
             os.mkdir(project_dir+args.out_path)
         else:
             from sys import exit
-            logger.info(f"Out file at {project_dir+args.out_path} exists, and --overwrite was not set")
-            exit(0)
+            logger.info(f"Out file at {project_dir+args.out_path} exists")
+            #exit(0)
     else:
         os.mkdir(project_dir+args.out_path)
     # Check if file exists, and overwrite if specified
