@@ -5,3 +5,4 @@ fedLabSync/data/cmapss
 fedLabSync.egg.info
 .vscode
 __pycache__
+training_checkpoints
